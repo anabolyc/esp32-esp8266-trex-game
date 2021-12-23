@@ -3,15 +3,24 @@
 #include "noInternet.h"
 #include "dino.h"
 
+#ifdef TOUCH_INPUTS
+#define TOUCH_TH 16
+#define PIN_PRESSED(pin) ((touchRead(pin) > 0) && (touchRead(pin) < TOUCH_TH))
+#else
+#define PIN_PRESSED(pin) (digitalRead(pin) == LOW)
+#endif
+
 TFT_eSPI tft = TFT_eSPI();
 TFT_eSprite img = TFT_eSprite(&tft);
 TFT_eSprite img2 = TFT_eSprite(&tft);
 TFT_eSprite e = TFT_eSprite(&tft);
 TFT_eSprite e2 = TFT_eSprite(&tft);
 
-// const int pwmFreq = 5000;
-// const int pwmResolution = 8;
-// const int pwmLedChannelTFT = 0;
+#ifdef ESP32
+const int pwmFreq = 5000;
+const int pwmResolution = 8;
+const int pwmLedChannelTFT = 0;
+#endif
 
 int dinoW = 33;
 int dinoH = 35;
@@ -128,10 +137,37 @@ void checkColision()
     }
 }
 
+void handleBrightness()
+{
+  if (PIN_PRESSED(PIN_BTN2))
+  {
+    if (press2 == 0)
+    {
+      press2 = 1;
+      b++;
+      if (b >= 6)
+        b = 0;
+#ifdef ESP32
+      ledcWrite(pwmLedChannelTFT, brightnes[b]);
+#endif
+    }
+  }
+  else
+  {
+    press2 = 0;
+  }
+}
+
 void setup()
 {
-  pinMode(0, INPUT_PULLUP);
-  pinMode(35, INPUT_PULLUP);
+  Serial.begin(SERIAL_BAUD);
+  Serial.println("Starting..");
+
+#ifndef TOUCH_INPUTS
+  pinMode(PIN_BTN1, INPUT_PULLUP);
+  pinMode(PIN_BTN2, INPUT_PULLUP);
+#endif
+
   tft.init();
   tft.setSwapBytes(true);
   tft.fillScreen(TFT_WHITE);
@@ -148,9 +184,11 @@ void setup()
   e2.createSprite(eW, eH);
   tft.fillScreen(TFT_WHITE);
 
-  // ledcSetup(pwmLedChannelTFT, pwmFreq, pwmResolution);
-  // ledcAttachPin(TFT_BL, pwmLedChannelTFT);
-  // ledcWrite(pwmLedChannelTFT, brightnes[b]);
+#ifdef ESP32
+  ledcSetup(pwmLedChannelTFT, pwmFreq, pwmResolution);
+  ledcAttachPin(TFT_BL, pwmLedChannelTFT);
+  ledcWrite(pwmLedChannelTFT, brightnes[b]);
+#endif
 
   for (int i = 0; i < 6; i++)
   {
@@ -165,24 +203,16 @@ void setup()
     bumps[n] = random(n * 90, (n + 1) * 120);
     bumpsF[n] = random(0, 2);
   }
+
   tft.pushImage(0, 0, 217, 135, noInternet);
-  while (digitalRead(0) != 0)
-  {
-    if (digitalRead(35) == 0)
-    {
-      if (press2 == 0)
-      {
-        press2 = 1;
-        b++;
-        if (b >= 6)
-          b = 0;
-        // ledcWrite(pwmLedChannelTFT, brightnes[b]);
-      }
-      delay(200);
-    }
-    else
-      press2 = 0;
+
+  while (!PIN_PRESSED(PIN_BTN1))  {
+    // Serial.printf("%d = %d/ %d = %d \n", touchRead(PIN_BTN1), PIN_PRESSED(PIN_BTN1), touchRead(PIN_BTN2), PIN_PRESSED(PIN_BTN2));
+    // delay(100);
+    handleBrightness();
+    ESP.wdtFeed();
   }
+
   tft.fillScreen(TFT_WHITE);
 }
 
@@ -191,7 +221,7 @@ void loop()
 
   if (gameRun == 1)
   {
-    if (digitalRead(0) == 0 && pressed == 0)
+    if (PIN_PRESSED(PIN_BTN1) && (pressed == 0))
     {
       pressed = 1;
       f = 0;
@@ -223,17 +253,5 @@ void loop()
     checkColision();
   }
 
-  if (digitalRead(35) == 0)
-  {
-    if (press2 == 0)
-    {
-      press2 = 1;
-      b++;
-      if (b >= 6)
-        b = 0;
-      // ledcWrite(pwmLedChannelTFT, brightnes[b]);
-    }
-  }
-  else
-    press2 = 0;
+  handleBrightness();
 }
