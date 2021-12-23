@@ -1,4 +1,4 @@
-## ESP32 and ESP8266 fake windows xp port
+## ESP32 and ESP8266 google crrome's Trex game 
 
 This is a joke project made by [VolosR](https://github.com/VolosR/TRexTTGOdisplay) that imitates Google's Chrome connection lost game.
 
