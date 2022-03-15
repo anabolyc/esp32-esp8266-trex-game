@@ -210,7 +210,7 @@ void setup()
     // Serial.printf("%d = %d/ %d = %d \n", touchRead(PIN_BTN1), PIN_PRESSED(PIN_BTN1), touchRead(PIN_BTN2), PIN_PRESSED(PIN_BTN2));
     // delay(100);
     handleBrightness();
-    ESP.wdtFeed();
+    // ESP.wdtFeed();
   }
 
   tft.fillScreen(TFT_WHITE);
